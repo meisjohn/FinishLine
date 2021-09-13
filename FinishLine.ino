@@ -34,10 +34,10 @@
 #define PIN_SERVO_TRACK_3     9
 #define PIN_SERVO_TRACK_4     6  
 #define PIN_RESET_BUTTON     0
-#define PIN_IR_SENSOR_TRACK_1 5
-#define PIN_IR_SENSOR_TRACK_2 4
-#define PIN_IR_SENSOR_TRACK_3 3
-#define PIN_IR_SENSOR_TRACK_4 2
+#define PIN_IR_SENSOR_TRACK_1 2
+#define PIN_IR_SENSOR_TRACK_2 3
+#define PIN_IR_SENSOR_TRACK_3 4
+#define PIN_IR_SENSOR_TRACK_4 5
 
 #define PWM_LEFT_TOP     90
 #define PWM_LEFT_MIDDLE  45
@@ -86,7 +86,8 @@ class Track
 
     void initialize() {
       // Initialize IR Sensor and Servo
-      pinMode(this->ir_sensor_pin, INPUT_PULLUP);
+      pinMode(this->ir_sensor_pin, INPUT);
+      digitalWrite(this->ir_sensor_pin, HIGH); // Turn on the pull-up
       this->servo.attach(this->servo_pin);
       this->triggered = 0;
     }
@@ -136,10 +137,24 @@ class Track
       return this->triggered;
     }
 
+
     byte check_for_ir_trigger(unsigned long time_millis) {
       // save the time of the trigger
       byte old_ir_state = this->ir_state;
       this->ir_state = digitalRead(this->ir_sensor_pin);
+      if (this->triggered) {
+        #ifdef DEBUG
+        Serial.print(" end ");
+        #endif
+       return 0;
+      }
+      #ifdef DEBUG
+      Serial.print(" ");
+      Serial.print(old_ir_state);
+      Serial.print("/");
+      Serial.print(this->ir_state);
+      Serial.print("  ");
+      #endif
       if (this->ir_state != old_ir_state && this->ir_state == LOW) {
         if ( 0 == this->trigger_time) {
           this->trigger_time = time_millis;
@@ -270,6 +285,10 @@ class FinishLine
       byte any_trigger = 0;
       byte track_triggered = 0;
 
+      #ifdef DEBUG
+      Serial.print("IR READ:  ");
+      #endif
+
       // Check to see if any of the tracks have triggered
       // if so, remember that and return that value. 
       for(int idx = 0; idx < NUM_TRACKS; idx++) {
@@ -293,6 +312,10 @@ class FinishLine
         }
         any_trigger |= track_triggered;
       }
+
+      #ifdef DEBUG
+      Serial.println();
+      #endif
 
       return any_trigger;
     }
